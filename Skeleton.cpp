@@ -64,7 +64,7 @@ unsigned int vao;
 
 
 class Circle {
-    const static int numberOfVertices = 50;
+    const static int numberOfVertices = 500;
     unsigned int vao, vbo;
     vec2 vertices[numberOfVertices];
 public:
@@ -101,7 +101,65 @@ public:
         glDrawArrays(mode, 0, numberOfVertices);
     }
 };
+
+class SiriusTriangle
+{
+    vec2 points[3];
+    Circle circles[3];
+    int numberOfPoints = 0;
+    bool calculated = false;
+
+    vec2 FindCircleCenter(vec2 p1, vec2 p2) 
+    {
+        vec2 c;
+        c.y = (
+                0.5f - 
+                (p2.x + p1.y * p1.y * p2.x) / (2.0f * p1.x) + 
+                (p2.x * p2.x + p2.y * p2.y - p1.x * p2.x) / 2.0f
+              ) / (p2.y - p1.y * p2.x / p1.x);
+        c.x =  (1.0f + p1.y*p1.y) / (2.0f * p1.x) + p1.x / 2.0f - (p1.y * c.y) / p1.x;
+        return c;
+    }
+
+public:
+    void AddPoint(float cX, float cY)
+    {
+        if(numberOfPoints < 3) {
+            points[numberOfPoints++] = vec2(cX, cY);
+        }
+        if (numberOfPoints == 3 && !calculated)
+        {
+            calculated = true;
+            vec2 A = points[0];
+            vec2 B = points[1];
+            vec2 C = points[2];
+
+            vec2 aCenter = FindCircleCenter(A,B);
+            vec2 bCenter = FindCircleCenter(B,C);
+            vec2 cCenter = FindCircleCenter(C,A);
+
+            float aRadius = sqrt(length(aCenter)*length(aCenter)-1.0f);
+            float bRadius = sqrt(length(bCenter)*length(bCenter)-1.0f);
+            float cRadius = sqrt(length(cCenter)*length(cCenter)-1.0f);
+            
+            circles[0].Create(aCenter, aRadius);
+            circles[1].Create(bCenter, bRadius);
+            circles[2].Create(cCenter, cRadius);
+        }
+    }
+
+    void Draw()
+    {
+        for(int i = 0; i < 3; i++)
+        {
+            circles[i].Draw(GL_LINE_STRIP, vec3(0.0f, 1.0f, 1.0f));
+        }
+
+    }    
+};
+
 Circle unitCircle;
+SiriusTriangle siriusTriangle;
 
 void onInitialization()
 {
@@ -115,6 +173,7 @@ void onDisplay()
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     unitCircle.Draw(GL_TRIANGLE_FAN, vec3(1.0f, 0.0f, 0.0f));
+    siriusTriangle.Draw();
     glutSwapBuffers();
 }
 
@@ -124,8 +183,10 @@ void onMouse(int button, int state, int pX, int pY)
     float cY = 1.0f - 2.0f * pY / windowHeight;
 
     if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) 
-        printf("click at (%3.2f, %3.2f)\n", cX, cY);
-
+    {
+        siriusTriangle.AddPoint(cX, cY);
+        glutPostRedisplay();
+    }
 }
 
 void onKeyboard(unsigned char key, int pX, int pY) {}
