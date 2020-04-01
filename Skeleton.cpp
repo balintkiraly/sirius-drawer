@@ -62,10 +62,51 @@ const char* const fragmentSource = R"(
 GPUProgram gpuProgram;
 unsigned int vao;
 
+
+class Circle {
+    const static int numberOfVertices = 50;
+    unsigned int vao, vbo;
+    vec2 vertices[numberOfVertices];
+public:
+    void Create(vec2 center, float radius) {
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+        for(int i = 0; i < numberOfVertices; i++) {
+            float fi = i * 2 * M_PI / numberOfVertices;
+            vertices[i] = vec2(cosf(fi) * radius, sinf(fi) * radius) + center;
+        }
+        
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec2) * numberOfVertices, vertices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, reinterpret_cast<void*>(0)); 		     // stride, offset: tightly packed
+    }
+
+    void Draw(GLenum mode, vec3 color) {
+        int location = glGetUniformLocation(gpuProgram.getId(), "color");
+        glUniform3f(location, color.x, color.y, color.z); 
+        float MVPtransf[4][4] = {
+                            1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1};
+
+        location = glGetUniformLocation(gpuProgram.getId(), "MVP"); 
+        glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);
+        glBindVertexArray(vao);
+        glDrawArrays(mode, 0, numberOfVertices);
+    }
+};
+Circle unitCircle;
+
 void onInitialization()
 {
     glViewport(0, 0, windowWidth, windowHeight);
-    
+    unitCircle.Create(vec2(0.0f,0.0f), 1.0f);
     gpuProgram.create(vertexSource, fragmentSource, "outColor");
 }
 
@@ -73,7 +114,7 @@ void onDisplay()
 {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-
+    unitCircle.Draw(GL_TRIANGLE_FAN, vec3(1.0f, 0.0f, 0.0f));
     glutSwapBuffers();
 }
 
