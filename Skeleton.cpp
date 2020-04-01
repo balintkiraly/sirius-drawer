@@ -179,6 +179,9 @@ public:
             circles[1].Create(bCenter, bRadius, bFrom, (bTo - bFrom));
             circles[2].Create(cCenter, cRadius, cFrom, (cTo - cFrom));
 
+            printf("Az 'a' oldal hossza: %3.2f\n", aRadius*fabs(aTo - aFrom));
+            printf("A 'b' oldal hossza: %3.2f\n", aRadius*fabs(bTo - bFrom));
+            printf("A 'c' oldal hossza: %3.2f\n", aRadius*fabs(cTo - cFrom));
         }
     }
 
