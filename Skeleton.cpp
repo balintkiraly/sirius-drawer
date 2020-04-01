@@ -68,7 +68,7 @@ class Circle {
     unsigned int vao, vbo;
     vec2 vertices[numberOfVertices];
 public:
-    void Create(vec2 center, float radius) {
+    void Create(vec2 center, float radius, float from = 0.0f, float length = 2.0f * M_PI ) {
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
 
@@ -76,7 +76,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
         for(int i = 0; i < numberOfVertices; i++) {
-            float fi = i * 2 * M_PI / numberOfVertices;
+            float fi = from + i * length / numberOfVertices;
             vertices[i] = vec2(cosf(fi) * radius, sinf(fi) * radius) + center;
         }
         
@@ -120,7 +120,18 @@ class SiriusTriangle
         c.x =  (1.0f + p1.y*p1.y) / (2.0f * p1.x) + p1.x / 2.0f - (p1.y * c.y) / p1.x;
         return c;
     }
-
+    float CalculateCircleRadius(vec2 center)
+    {
+        return sqrt(length(center)*length(center)-1.0f);
+    }
+    float ChooseFromRadian(float a, float b)
+    {
+        return fabs(a-b) > M_PI ? b : a;
+    }
+    float ChooseToRadian(float a, float b)
+    {
+        return fabs(a-b) > M_PI ? a : b;
+    }
 public:
     void AddPoint(float cX, float cY)
     {
@@ -138,13 +149,30 @@ public:
             vec2 bCenter = FindCircleCenter(B,C);
             vec2 cCenter = FindCircleCenter(C,A);
 
-            float aRadius = sqrt(length(aCenter)*length(aCenter)-1.0f);
-            float bRadius = sqrt(length(bCenter)*length(bCenter)-1.0f);
-            float cRadius = sqrt(length(cCenter)*length(cCenter)-1.0f);
+            float aRadius = CalculateCircleRadius(aCenter);
+            float bRadius = CalculateCircleRadius(bCenter);
+            float cRadius = CalculateCircleRadius(cCenter);
+
+            float aFi1 = atan2(B.y - aCenter.y, B.x - aCenter.x);
+            float aFi2 = atan2(A.y - aCenter.y, A.x - aCenter.x);
+
+            float bFi1 = atan2(C.y - bCenter.y, C.x - bCenter.x);
+            float bFi2 = atan2(B.y - bCenter.y, B.x - bCenter.x);
             
-            circles[0].Create(aCenter, aRadius);
-            circles[1].Create(bCenter, bRadius);
-            circles[2].Create(cCenter, cRadius);
+            float cFi1 =  atan2(A.y - cCenter.y, A.x - cCenter.x);
+            float cFi2 =  atan2(C.y - cCenter.y, C.x - cCenter.x);
+            
+            float aFrom = ChooseFromRadian(aFi1, aFi2);
+            float aTo = ChooseToRadian(aFi1, aFi2);
+            float bFrom = ChooseFromRadian(bFi1, bFi2);
+            float bTo = ChooseToRadian(bFi1, bFi2);
+            float cFrom = ChooseFromRadian(cFi1, cFi2);
+            float cTo = ChooseToRadian(cFi1, cFi2);
+
+            circles[0].Create(aCenter, aRadius, aFrom, (aTo - aFrom));
+            circles[1].Create(bCenter, bRadius, bFrom, (bTo - bFrom));
+            circles[2].Create(cCenter, cRadius, cFrom, (cTo - cFrom));
+
         }
     }
 
