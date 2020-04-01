@@ -61,10 +61,10 @@ const char* const fragmentSource = R"(
 
 GPUProgram gpuProgram;
 unsigned int vao;
-
+const static int tessellationLevel = 500;
 
 class Circle {
-    const static int numberOfVertices = 500;
+    const static int numberOfVertices = tessellationLevel;
     unsigned int vao, vbo;
     vec2 vertices[numberOfVertices];
 public:
@@ -100,6 +100,10 @@ public:
         glBindVertexArray(vao);
         glDrawArrays(mode, 0, numberOfVertices);
     }
+    vec2* GetVertices()
+    {
+        return vertices;
+    }
 };
 
 class SiriusTriangle
@@ -108,6 +112,8 @@ class SiriusTriangle
     Circle circles[3];
     int numberOfPoints = 0;
     bool calculated = false;
+    unsigned int vao, vbo;
+    vec2 vertices[3 * tessellationLevel + 1];
 
     vec2 FindCircleCenter(vec2 p1, vec2 p2) 
     {
@@ -178,12 +184,56 @@ public:
 
     void Draw()
     {
+        vec2 centerOfTriangle = vec2(0.0f, 0.0f);
         for(int i = 0; i < 3; i++)
         {
-            circles[i].Draw(GL_LINE_STRIP, vec3(0.0f, 1.0f, 1.0f));
+            centerOfTriangle.x = centerOfTriangle.x + points[i].x;
+            centerOfTriangle.y = centerOfTriangle.y + points[i].y;
         }
+        centerOfTriangle.x = centerOfTriangle.x / 3;
+        centerOfTriangle.y = centerOfTriangle.y / 3;
+        
+        vertices[0] = centerOfTriangle;
+        for(int n = 0; n < 3; n++)
+        {
+            vec2* aCircleVertices = new vec2[tessellationLevel];
+            aCircleVertices = circles[n].GetVertices();
+            int j = 0;
+            for(int i = n * tessellationLevel + 1; i <= (n + 1) * tessellationLevel; i++ && j++)
+            {
+                vertices[i] = aCircleVertices[tessellationLevel-j];
+            }
+        }
+        
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
 
-    }    
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec2) * 3 * tessellationLevel + 1, vertices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, reinterpret_cast<void*>(0)); 		     // stride, offset: tightly packed
+    
+        int location = glGetUniformLocation(gpuProgram.getId(), "color");
+        glUniform3f(location, 0.0f, 1.0f, 0.0f); 
+        float MVPtransf[4][4] = {
+                            1, 0, 0, 0,
+                            0, 1, 0, 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1};
+
+        location = glGetUniformLocation(gpuProgram.getId(), "MVP"); 
+        glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 3 * tessellationLevel + 1);
+        
+        for(int i = 0; i < 3; i++)
+        {
+            circles[i].Draw(GL_LINE_STRIP, vec3(1.0f, 0.0f, 0.0f));
+        }
+    }
 };
 
 Circle unitCircle;
@@ -200,7 +250,7 @@ void onDisplay()
 {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    unitCircle.Draw(GL_TRIANGLE_FAN, vec3(1.0f, 0.0f, 0.0f));
+    unitCircle.Draw(GL_TRIANGLE_FAN, vec3(0.8f, 0.9f, 0.9f));
     siriusTriangle.Draw();
     glutSwapBuffers();
 }
