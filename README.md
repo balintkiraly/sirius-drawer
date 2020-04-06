@@ -24,3 +24,6 @@ A Szíriusz egyenes egy olyan euklideszi körív, amely az alapkörre merőleges
 
 A feladat három egér klikk után a három pont által definiált háromszöget a háttértől eltérő színnel kitölteni, az éleket ezektől eltérő színnel felrajzolni, és a szabványos kimenetre a három szögeit és oldalainak hosszát kiírni.
 
+## Screenshot
+
+![Screenshot](assets/screenshot.png)
